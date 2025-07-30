@@ -96,8 +96,19 @@ function createAuthResponse(
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Enforce HTTPS in production environment
+  if (process.env.NODE_ENV === 'production') {
+    const protocol = request.headers.get('x-forwarded-proto') || request.nextUrl.protocol;
+    if (protocol !== 'https:') {
+      const httpsUrl = new URL(request.url);
+      httpsUrl.protocol = 'https:';
+      return NextResponse.redirect(httpsUrl, 301);
+    }
+  }
+
   const isAuth = isAuthenticated(request);
-  
+
   // Handle API routes
   if (pathname.startsWith('/api/')) {
     // Check if it's a protected API route
