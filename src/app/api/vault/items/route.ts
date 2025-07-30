@@ -141,10 +141,19 @@ export async function GET(request: NextRequest) {
       request
     );
 
+    const formattedItems = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      encrypted_data: item.encrypted_data,
+      iv: item.iv,
+      created_at: item.created_at?.toISOString() || '',
+      updated_at: item.updated_at?.toISOString() || ''
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        items: items as VaultItemResponse[]
+        items: formattedItems as VaultItemResponse[]
       }
     });
     
@@ -231,11 +240,19 @@ export async function POST(request: NextRequest) {
       request
     );
 
+    const createdItem = result[0];
     return NextResponse.json({
       success: true,
       message: 'Vault item created successfully',
       data: {
-        item: result[0] as VaultItemResponse
+        item: {
+          id: createdItem.id,
+          name: createdItem.name,
+          encrypted_data: createdItem.encrypted_data,
+          iv: createdItem.iv,
+          created_at: createdItem.created_at?.toISOString() || '',
+          updated_at: createdItem.updated_at?.toISOString() || ''
+        } as VaultItemResponse
       }
     });
 

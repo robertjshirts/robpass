@@ -60,7 +60,7 @@ test.describe('Authentication Flow', () => {
     
     // Should redirect to authenticated state
     await expect(page.getByRole('heading', { name: '🔐 RobPass' })).toBeVisible();
-    await expect(page.getByText(`Welcome back, ${username}`)).toBeVisible();
+    await expect(page.getByText(`Welcome back, ${username}!`)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
     
     // Should show secure session status
@@ -114,7 +114,7 @@ test.describe('Authentication Flow', () => {
     await page.locator('form').getByRole('button', { name: 'Create Account' }).click();
     
     // Wait for registration to complete
-    await expect(page.getByText(`Welcome back, ${username}`)).toBeVisible();
+    await expect(page.getByText(`Welcome back, ${username}!`)).toBeVisible();
     
     // Logout
     await page.getByRole('button', { name: 'Logout' }).click();
@@ -131,7 +131,7 @@ test.describe('Authentication Flow', () => {
     await expect(page.getByText('Signing In...')).toBeVisible();
     
     // Should successfully login
-    await expect(page.getByText(`Welcome back, ${username}`)).toBeVisible();
+    await expect(page.getByText(`Welcome back, ${username}!`)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
   });
 
@@ -159,7 +159,7 @@ test.describe('Authentication Flow', () => {
     await page.locator('form').getByRole('button', { name: 'Create Account' }).click();
     
     // Wait for login to complete
-    await expect(page.getByText(`Welcome back, ${username}`)).toBeVisible();
+    await expect(page.getByText(`Welcome back, ${username}!`)).toBeVisible();
     
     // Logout
     await page.getByRole('button', { name: 'Logout' }).click();
@@ -170,7 +170,7 @@ test.describe('Authentication Flow', () => {
     await expect(page.getByRole('button', { name: 'Create Account' })).toBeVisible();
     
     // Should not show authenticated content
-    await expect(page.getByText(`Welcome back, ${username}`)).not.toBeVisible();
+    await expect(page.getByText(`Welcome back, ${username}!`)).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Logout' })).not.toBeVisible();
   });
 

@@ -42,8 +42,6 @@ next-env.d.ts
 
 # db stuff
 local.db
-local.db-shm
-local.db-wal
 
 #playwright
 /test-results/

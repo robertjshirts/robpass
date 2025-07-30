@@ -42,7 +42,9 @@ function setupTestDatabase() {
     }
 
     // Set test environment
-    process.env.NODE_ENV = 'test'
+    if (!process.env.NODE_ENV) {
+      (process.env as any).NODE_ENV = 'test'
+    }
     process.env.DB_FILE_NAME = testDbPath
 
     // Run database migrations

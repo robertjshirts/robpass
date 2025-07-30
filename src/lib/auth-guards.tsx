@@ -106,7 +106,7 @@ export function useAuth(): AuthState & {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionToken}`
+          'Authorization': `Bearer ${refreshStatus.sessionToken}`
         }
       });
 
@@ -226,7 +226,8 @@ export function withAuth<P extends object>(
 
     if (isLoading) {
       if (LoadingComponent) {
-        return <LoadingComponent />;
+        const Component = LoadingComponent;
+        return <Component />;
       }
       
       return (

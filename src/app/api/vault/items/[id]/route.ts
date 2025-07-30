@@ -119,7 +119,7 @@ function validateItemId(id: string): number | null {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require authentication
@@ -127,10 +127,11 @@ export async function GET(
     if (authResult instanceof Response) {
       return authResult;
     }
-    
+
     const { user } = authResult;
-    
-    // Validate item ID
+
+    // Await params and validate item ID
+    const params = await context.params;
     const itemId = validateItemId(params.id);
     if (itemId === null) {
       return NextResponse.json(
@@ -172,10 +173,18 @@ export async function GET(
       );
     }
     
+    const item = items[0];
     return NextResponse.json({
       success: true,
       data: {
-        item: items[0] as VaultItemResponse
+        item: {
+          id: item.id,
+          name: item.name,
+          encrypted_data: item.encrypted_data,
+          iv: item.iv,
+          created_at: item.created_at?.toISOString() || '',
+          updated_at: item.updated_at?.toISOString() || ''
+        } as VaultItemResponse
       }
     });
     
@@ -197,7 +206,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require authentication
@@ -205,10 +214,11 @@ export async function PUT(
     if (authResult instanceof Response) {
       return authResult;
     }
-    
+
     const { user } = authResult;
-    
-    // Validate item ID
+
+    // Await params and validate item ID
+    const params = await context.params;
     const itemId = validateItemId(params.id);
     if (itemId === null) {
       return NextResponse.json(
@@ -259,7 +269,7 @@ export async function PUT(
         name,
         encrypted_data,
         iv,
-        updated_at: new Date().toISOString()
+        updated_at: new Date()
       })
       .where(and(
         eq(vault_items.id, itemId),
@@ -284,11 +294,19 @@ export async function PUT(
       );
     }
     
+    const updatedItem = result[0];
     return NextResponse.json({
       success: true,
       message: 'Vault item updated successfully',
       data: {
-        item: result[0] as VaultItemResponse
+        item: {
+          id: updatedItem.id,
+          name: updatedItem.name,
+          encrypted_data: updatedItem.encrypted_data,
+          iv: updatedItem.iv,
+          created_at: updatedItem.created_at?.toISOString() || '',
+          updated_at: updatedItem.updated_at?.toISOString() || ''
+        } as VaultItemResponse
       }
     });
     
@@ -310,7 +328,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require authentication
@@ -318,10 +336,11 @@ export async function DELETE(
     if (authResult instanceof Response) {
       return authResult;
     }
-    
+
     const { user } = authResult;
-    
-    // Validate item ID
+
+    // Await params and validate item ID
+    const params = await context.params;
     const itemId = validateItemId(params.id);
     if (itemId === null) {
       return NextResponse.json(

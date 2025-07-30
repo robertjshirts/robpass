@@ -242,7 +242,7 @@ export class SecurityHelpers {
     )
     expect(sessionToken).toBeTruthy()
     expect(typeof sessionToken).toBe('string')
-    expect(sessionToken.length).toBeGreaterThan(10)
+    expect(sessionToken!.length).toBeGreaterThan(10)
   }
 
   async expectNoSessionTokenInStorage(): Promise<void> {

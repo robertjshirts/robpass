@@ -14,7 +14,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { SignJWT } from 'jose';
 import { getDatabase, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
@@ -174,10 +173,12 @@ export async function POST(request: NextRequest) {
     const rateLimitCheck = checkRateLimit(clientIP);
 
     if (!rateLimitCheck.allowed) {
+      // Get current attempt count for logging
+      const attempts = loginAttempts.get(clientIP);
       SecurityLogger.warn(
         LogCategory.SECURITY,
         'Rate limit exceeded for login attempts',
-        { clientIP, attempts: rateLimitCheck.attempts },
+        { clientIP, attempts: attempts?.count || 0 },
         request
       );
 

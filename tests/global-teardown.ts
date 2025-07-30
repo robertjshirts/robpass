@@ -102,7 +102,7 @@ function cleanupTestArtifacts() {
               fs.rmSync(dirPath, { recursive: true, force: true })
               console.log(`✅ Cleaned up test artifacts: ${entry.name}`)
             } catch (error) {
-              console.warn(`⚠️  Could not clean up ${entry.name}:`, error.message)
+              console.warn(`⚠️  Could not clean up ${entry.name}:`, error instanceof Error ? error.message : String(error))
             }
           }
         }
@@ -159,7 +159,7 @@ function verifySensitiveDataCleanup() {
           }
         }
       } catch (error) {
-        console.warn(`⚠️  Could not verify cleanup in ${dir}:`, error.message)
+        console.warn(`⚠️  Could not verify cleanup in ${dir}:`, error instanceof Error ? error.message : String(error))
       }
     }
   }

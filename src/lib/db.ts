@@ -1,41 +1,40 @@
 /**
  * Database Connection and Configuration for RobPass
- * 
- * This module provides the database connection using Drizzle ORM with SQLite.
+ *
+ * This module provides the database connection using Drizzle ORM with PostgreSQL.
  * It ensures proper connection management and provides a singleton instance.
  */
 
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import { users, vault_items } from '../schema';
 
-// Database connection instance
+// Database connection instances
 let db: ReturnType<typeof drizzle> | null = null;
-let sqlite: Database.Database | null = null;
+let pgPool: Pool | null = null;
 
 /**
  * Get or create database connection
  */
 export function getDatabase() {
   if (!db) {
-    const dbPath = process.env.DB_FILE_NAME || 'file:local.db';
-    
-    // Remove 'file:' prefix if present
-    const cleanPath = dbPath.startsWith('file:') ? dbPath.slice(5) : dbPath;
-    
-    sqlite = new Database(cleanPath);
-    
-    // Enable foreign key constraints
-    sqlite.pragma('foreign_keys = ON');
-    
-    // Enable WAL mode for better performance
-    sqlite.pragma('journal_mode = WAL');
-    
-    db = drizzle(sqlite, {
+    const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+    if (!postgresUrl) {
+      throw new Error('DATABASE_URL or POSTGRES_URL environment variable is required');
+    }
+
+    // Create PostgreSQL connection pool
+    pgPool = new Pool({
+      connectionString: postgresUrl,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+
+    db = drizzle(pgPool, {
       schema: { users, vault_items }
     });
   }
-  
+
   return db;
 }
 
@@ -43,21 +42,21 @@ export function getDatabase() {
  * Close database connection
  */
 export function closeDatabase() {
-  if (sqlite) {
-    sqlite.close();
-    sqlite = null;
-    db = null;
+  if (pgPool) {
+    pgPool.end();
+    pgPool = null;
   }
+  db = null;
 }
 
 /**
  * Health check for database connection
  */
-export function checkDatabaseHealth(): boolean {
+export async function checkDatabaseHealth(): Promise<boolean> {
   try {
-    const db = getDatabase();
+    const database = getDatabase();
     // Simple query to check if database is accessible
-    db.select().from(users).limit(1).all();
+    await database.select().from(users).limit(1);
     return true;
   } catch (error) {
     console.error('Database health check failed:', error);

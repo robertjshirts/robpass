@@ -60,7 +60,7 @@ export function generatePassword(options: Partial<PasswordOptions> = {}): string
   const requiredChars: string[] = [];
   
   if (opts.includeUppercase) {
-    let chars = CHARACTER_SETS.uppercase;
+    let chars: string = CHARACTER_SETS.uppercase;
     if (opts.excludeSimilar) {
       chars = chars.replace(/[O]/g, '');
     }
@@ -69,7 +69,7 @@ export function generatePassword(options: Partial<PasswordOptions> = {}): string
   }
   
   if (opts.includeLowercase) {
-    let chars = CHARACTER_SETS.lowercase;
+    let chars: string = CHARACTER_SETS.lowercase;
     if (opts.excludeSimilar) {
       chars = chars.replace(/[l]/g, '');
     }
@@ -78,16 +78,16 @@ export function generatePassword(options: Partial<PasswordOptions> = {}): string
   }
   
   if (opts.includeNumbers) {
-    let chars = CHARACTER_SETS.numbers;
+    let chars: string = CHARACTER_SETS.numbers;
     if (opts.excludeSimilar) {
       chars = chars.replace(/[01]/g, '');
     }
     charset += chars;
     requiredChars.push(getRandomChar(chars));
   }
-  
+
   if (opts.includeSymbols) {
-    let chars = CHARACTER_SETS.symbols;
+    let chars: string = CHARACTER_SETS.symbols;
     if (opts.excludeAmbiguous) {
       for (const char of CHARACTER_SETS.ambiguous) {
         chars = chars.replace(new RegExp(`\\${char}`, 'g'), '');

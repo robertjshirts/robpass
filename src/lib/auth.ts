@@ -6,7 +6,6 @@
  * secure session management.
  */
 
-import jwt from 'jsonwebtoken';
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { getDatabase, users } from './db';
@@ -29,18 +28,25 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Verify and decode a JWT session token
+ * Verify and decode a JWT session token using jose
  */
-export function verifySessionToken(token: string): SessionPayload | null {
+export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as SessionPayload;
-    
+    const secretKey = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secretKey);
+
     // Verify token type
-    if (decoded.type !== 'session') {
+    if (payload.type !== 'session') {
       return null;
     }
-    
-    return decoded;
+
+    return {
+      userId: payload.userId as number,
+      username: payload.username as string,
+      iat: payload.iat as number,
+      exp: payload.exp as number,
+      type: payload.type as string
+    };
   } catch (error) {
     // Token is invalid, expired, or malformed
     return null;
@@ -78,7 +84,7 @@ export async function authenticateUser(request: NextRequest): Promise<Authentica
     }
     
     // Verify token
-    const payload = verifySessionToken(token);
+    const payload = await verifySessionToken(token);
     if (!payload) {
       return null;
     }
@@ -166,13 +172,13 @@ export function isValidTokenFormat(token: string): boolean {
 /**
  * Get session expiration time from token
  */
-export function getSessionExpiration(token: string): Date | null {
+export async function getSessionExpiration(token: string): Promise<Date | null> {
   try {
-    const payload = verifySessionToken(token);
+    const payload = await verifySessionToken(token);
     if (!payload || !payload.exp) {
       return null;
     }
-    
+
     return new Date(payload.exp * 1000);
   } catch (error) {
     return null;
@@ -182,12 +188,12 @@ export function getSessionExpiration(token: string): Date | null {
 /**
  * Check if session is expired
  */
-export function isSessionExpired(token: string): boolean {
-  const expiration = getSessionExpiration(token);
+export async function isSessionExpired(token: string): Promise<boolean> {
+  const expiration = await getSessionExpiration(token);
   if (!expiration) {
     return true;
   }
-  
+
   return Date.now() >= expiration.getTime();
 }
 
@@ -214,29 +220,32 @@ export async function generateSessionTokenJose(userId: number, username: string,
 /**
  * Generate a new session token (legacy - for backward compatibility)
  */
-export function generateSessionToken(userId: number, username: string, expiresIn: string = '24h'): string {
-  const payload = {
+export async function generateSessionToken(userId: number, username: string, expiresIn: string = '24h'): Promise<string> {
+  const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+  return await new SignJWT({
     userId,
     username,
-    iat: Math.floor(Date.now() / 1000),
     type: 'session'
-  };
-
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(secretKey);
 }
 
 /**
  * Refresh session token (extend expiration)
  */
-export function refreshSessionToken(token: string, expiresIn: string = '24h'): string | null {
+export async function refreshSessionToken(token: string, expiresIn: string = '24h'): Promise<string | null> {
   try {
-    const payload = verifySessionToken(token);
+    const payload = await verifySessionToken(token);
     if (!payload) {
       return null;
     }
-    
+
     // Generate new token with same user data but new expiration
-    return generateSessionToken(payload.userId, payload.username, expiresIn);
+    return await generateSessionToken(payload.userId, payload.username, expiresIn);
   } catch (error) {
     return null;
   }
@@ -251,8 +260,8 @@ export function blacklistToken(token: string): void {
   blacklistedTokens.add(token);
   
   // Clean up expired tokens periodically
-  setTimeout(() => {
-    if (isSessionExpired(token)) {
+  setTimeout(async () => {
+    if (await isSessionExpired(token)) {
       blacklistedTokens.delete(token);
     }
   }, 24 * 60 * 60 * 1000); // Clean up after 24 hours
