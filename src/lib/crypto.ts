@@ -78,67 +78,8 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-/**
- * Derive master key from password and salt using PBKDF2
- */
-export async function deriveMasterKey(
-  password: string,
-  salt: string,
-  iterations: number = CRYPTO_CONFIG.PBKDF2_ITERATIONS
-): Promise<CryptoKey> {
-  try {
-    // Import password as key material
-    const passwordKey = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(password),
-      'PBKDF2',
-      false,
-      ['deriveKey']
-    );
 
-    // Derive the master key
-    const masterKey = await crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt: base64ToArrayBuffer(salt),
-        iterations,
-        hash: 'SHA-256'
-      },
-      passwordKey,
-      {
-        name: 'AES-GCM',
-        length: CRYPTO_CONFIG.AES_KEY_LENGTH
-      },
-      false, // Not extractable for security
-      ['encrypt', 'decrypt']
-    );
 
-    return masterKey;
-  } catch (error) {
-    throw new Error(`Failed to derive master key: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Derive authentication hash from master key
- * This creates a different value from the master key that can be safely sent to the server
- */
-export async function deriveAuthenticationHash(masterKey: CryptoKey): Promise<string> {
-  try {
-    // Export the master key to raw format (this requires the key to be extractable)
-    // Since we can't extract the master key, we'll use a different approach
-    // We'll derive a separate key for authentication using PBKDF2 again
-    const keyData = await crypto.subtle.exportKey('raw', masterKey);
-    const hash = await crypto.subtle.digest('SHA-256', keyData);
-    return arrayBufferToBase64(hash);
-  } catch (error) {
-    throw new Error(`Failed to derive authentication hash: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
- * Alternative approach: Derive both master key and authentication hash from password
- */
 export async function deriveKeys(
   password: string,
   salt: string,

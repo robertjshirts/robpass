@@ -1,5 +1,5 @@
 ---
-type: "agent_requested"
+type: "always_apply"
 description: "when finishing a task"
 ---
-make sure to make a git commit, test the feature with the playwright mcp, and mark the task as complete.
+when finishing a task or completing a feature, always test with the playwright MCP, fix if broken, and create a concise `git commit` before moving on to the next task.
