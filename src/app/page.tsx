@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
+import VaultDashboard from '@/components/VaultDashboard';
 import { isSessionActive, getCurrentUsername, clearSession, setupSessionEventListeners } from '@/lib/memory-manager';
 
 type AuthMode = 'login' | 'register';
@@ -73,59 +74,31 @@ export default function Home() {
 
   if (user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          {/* Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   🔐 RobPass
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
-                  Welcome back, {user.username}!
-                </p>
+                <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
+                  Welcome back, {user.username}
+                </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
               >
                 Logout
               </button>
             </div>
           </div>
-
-          {/* Main Content */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Password Vault
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Your secure password vault will be implemented here. The authentication system is now complete!
-            </p>
-
-            {/* Security Status */}
-            <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-green-800 dark:text-green-200">
-                    Secure Session Active
-                  </h3>
-                  <div className="mt-2 text-sm text-green-700 dark:text-green-300">
-                    <p>✅ Master key stored in volatile memory</p>
-                    <p>✅ Zero-knowledge architecture maintained</p>
-                    <p>✅ Session token secured</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
+
+        {/* Main Content */}
+        <VaultDashboard user={user} />
       </div>
     );
   }
