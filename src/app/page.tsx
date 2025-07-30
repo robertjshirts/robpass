@@ -121,6 +121,24 @@ function HomeContent() {
 
         {/* Main Content */}
         <VaultDashboard user={user} />
+
+        {/* Footer */}
+        <div className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="max-w-4xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
+            <p>Built with Next.js, Drizzle ORM, and Web Crypto API</p>
+            <p className="mt-1">🔒 Your data is encrypted client-side</p>
+            <p className="mt-2">
+              <a
+                href="https://github.com/robertjshirts/robpass"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                View on GitHub
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -173,6 +191,16 @@ function HomeContent() {
         <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Built with Next.js, Drizzle ORM, and Web Crypto API</p>
           <p className="mt-1">🔒 Your data is encrypted client-side</p>
+          <p className="mt-2">
+            <a
+              href="https://github.com/robertjshirts/robpass"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              View on GitHub
+            </a>
+          </p>
         </div>
       </div>
     </div>
