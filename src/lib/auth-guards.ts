@@ -15,12 +15,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  isSessionActive, 
-  getCurrentUsername, 
-  clearSession, 
+import {
+  isSessionActive,
+  getCurrentUsername,
+  clearSession,
   getSessionToken,
-  restoreSessionFromStorage 
+  restoreSessionFromStorage,
+  handleBrowserRefresh,
+  validateSessionIntegrity
 } from './memory-manager';
 
 export interface AuthState {
@@ -54,29 +56,47 @@ export function useAuth(): AuthState & {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // First check if we have an active session in memory
+      // First check if we have an active session in memory with integrity validation
       if (isSessionActive()) {
-        const username = getCurrentUsername();
-        if (username) {
-          setAuthState({
-            isAuthenticated: true,
-            isLoading: false,
-            user: { id: 0, username }, // ID will be updated from server validation
-            error: null
-          });
-          return;
+        const sessionIntegrity = await validateSessionIntegrity();
+        if (sessionIntegrity.isValid) {
+          const username = getCurrentUsername();
+          if (username) {
+            setAuthState({
+              isAuthenticated: true,
+              isLoading: false,
+              user: { id: 0, username }, // ID will be updated from server validation
+              error: null
+            });
+            return;
+          }
+        } else {
+          // Session integrity failed, clear it
+          console.warn('Session integrity check failed:', sessionIntegrity.errors);
+          clearSession();
         }
       }
 
-      // Try to restore session from storage
-      const { sessionToken, username } = restoreSessionFromStorage();
-      
-      if (!sessionToken || !username) {
+      // Handle browser refresh scenario
+      const refreshStatus = handleBrowserRefresh();
+
+      if (!refreshStatus.sessionToken || !refreshStatus.username) {
         setAuthState({
           isAuthenticated: false,
           isLoading: false,
           user: null,
           error: null
+        });
+        return;
+      }
+
+      // If we detected a browser refresh, the user needs to re-authenticate
+      if (refreshStatus.needsReauth) {
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          error: 'Session expired. Please log in again to access your vault.'
         });
         return;
       }

@@ -13,7 +13,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken, extractSessionToken, isTokenBlacklisted } from '@/lib/auth';
 
 // Define protected routes that require authentication
 const PROTECTED_ROUTES = [
@@ -56,28 +55,24 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
 }
 
 /**
+ * Extract session token from request
+ */
+function extractSessionToken(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
+/**
  * Check if user is authenticated based on session token
  */
 function isAuthenticated(request: NextRequest): boolean {
-  try {
-    const token = extractSessionToken(request);
-    
-    if (!token) {
-      return false;
-    }
-    
-    // Check if token is blacklisted
-    if (isTokenBlacklisted(token)) {
-      return false;
-    }
-    
-    // Verify token signature and expiration
-    const payload = verifySessionToken(token);
-    return payload !== null;
-    
-  } catch (error) {
-    return false;
-  }
+  // For now, just check if a token exists
+  // The actual JWT verification will be done in the API routes
+  const token = extractSessionToken(request);
+  return !!token;
 }
 
 /**

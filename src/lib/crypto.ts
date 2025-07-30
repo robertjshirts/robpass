@@ -128,7 +128,9 @@ export async function deriveAuthenticationHash(masterKey: CryptoKey): Promise<st
     // Export the master key to raw format (this requires the key to be extractable)
     // Since we can't extract the master key, we'll use a different approach
     // We'll derive a separate key for authentication using PBKDF2 again
-    throw new Error('Cannot extract master key for authentication hash derivation');
+    const keyData = await crypto.subtle.exportKey('raw', masterKey);
+    const hash = await crypto.subtle.digest('SHA-256', keyData);
+    return arrayBufferToBase64(hash);
   } catch (error) {
     throw new Error(`Failed to derive authentication hash: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

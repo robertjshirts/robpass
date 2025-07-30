@@ -10,6 +10,8 @@
 import { useState, useEffect } from 'react';
 import VaultItem, { VaultItemData } from './VaultItem';
 import AddVaultItem from './AddVaultItem';
+import { ErrorDisplay, useErrorHandler } from './ErrorBoundary';
+import { SecurityLogger, LogCategory } from '@/lib/security-logger';
 
 interface VaultDashboardProps {
   user: {
@@ -24,6 +26,7 @@ export default function VaultDashboard({ user }: VaultDashboardProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const handleError = useErrorHandler();
 
   /**
    * Load vault items from API
@@ -51,6 +54,7 @@ export default function VaultDashboard({ user }: VaultDashboardProps) {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load vault items';
+      handleError(error instanceof Error ? error : new Error(errorMessage), 'VaultDashboard.loadVaultItems');
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -132,28 +136,12 @@ export default function VaultDashboard({ user }: VaultDashboardProps) {
       </div>
 
       {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            </div>
-            <div className="ml-auto">
-              <button
-                onClick={loadVaultItems}
-                className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 underline"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ErrorDisplay
+        error={error}
+        onRetry={loadVaultItems}
+        onDismiss={() => setError(null)}
+        className="mb-6"
+      />
 
       {/* Add Item Form */}
       {showAddForm && (

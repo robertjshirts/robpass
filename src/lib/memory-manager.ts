@@ -26,6 +26,9 @@ let currentSession: SecureSession = {
 // Session timeout in milliseconds (30 minutes)
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
+// Global interval reference for cleanup
+let sessionTimeoutInterval: NodeJS.Timeout | null = null;
+
 /**
  * Initialize a new secure session with master key
  */
@@ -120,21 +123,27 @@ export function updateLastActivity(): void {
  * Clear the current session and all sensitive data from memory
  */
 export function clearSession(): void {
+  // Clear the session timeout interval
+  if (sessionTimeoutInterval) {
+    clearInterval(sessionTimeoutInterval);
+    sessionTimeoutInterval = null;
+  }
+
   // Clear the master key reference
   currentSession.masterKey = null;
-  
+
   // Clear other sensitive data
   currentSession.username = null;
   currentSession.sessionToken = null;
   currentSession.isActive = false;
   currentSession.lastActivity = 0;
-  
+
   // Clear sessionStorage
   if (typeof window !== 'undefined' && window.sessionStorage) {
     window.sessionStorage.removeItem('robpass_session_token');
     window.sessionStorage.removeItem('robpass_username');
   }
-  
+
   // Force garbage collection if available (not guaranteed)
   if (typeof window !== 'undefined' && window.gc) {
     window.gc();
@@ -145,12 +154,26 @@ export function clearSession(): void {
  * Set up automatic session timeout
  */
 function setupSessionTimeout(): void {
-  // Clear any existing timeout
+  // Clear any existing timeout to prevent memory leaks
+  if (sessionTimeoutInterval) {
+    clearInterval(sessionTimeoutInterval);
+    sessionTimeoutInterval = null;
+  }
+
   if (typeof window !== 'undefined') {
     // Set up a periodic check for session expiration
-    const checkInterval = setInterval(() => {
+    sessionTimeoutInterval = setInterval(() => {
       if (!isSessionActive()) {
-        clearInterval(checkInterval);
+        clearInterval(sessionTimeoutInterval!);
+        sessionTimeoutInterval = null;
+
+        // Trigger session cleanup if expired
+        clearSession();
+
+        // Optionally notify user of session expiration
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('robpass:session-expired'));
+        }
       }
     }, 60000); // Check every minute
   }
@@ -240,10 +263,37 @@ export function setupSessionEventListeners(): void {
 }
 
 /**
+ * Handle browser refresh scenario
+ * Checks if there's a valid session token but no master key (indicating a refresh)
+ */
+export function handleBrowserRefresh(): {
+  needsReauth: boolean;
+  sessionToken: string | null;
+  username: string | null;
+} {
+  const { sessionToken, username } = restoreSessionFromStorage();
+
+  // If we have session data but no active session, user needs to re-authenticate
+  const needsReauth = !!(sessionToken && username && !currentSession.isActive);
+
+  return {
+    needsReauth,
+    sessionToken,
+    username
+  };
+}
+
+/**
  * Secure memory cleanup utility
  * Attempts to overwrite sensitive data in memory (best effort in JavaScript)
  */
 export function secureMemoryCleanup(): void {
+  // Clear the session timeout interval
+  if (sessionTimeoutInterval) {
+    clearInterval(sessionTimeoutInterval);
+    sessionTimeoutInterval = null;
+  }
+
   // Clear any remaining references
   currentSession = {
     masterKey: null,
@@ -252,16 +302,43 @@ export function secureMemoryCleanup(): void {
     isActive: false,
     lastActivity: 0
   };
-  
+
   // Clear sessionStorage
   if (typeof window !== 'undefined' && window.sessionStorage) {
     window.sessionStorage.clear();
   }
-  
+
   // Attempt to trigger garbage collection
   if (typeof window !== 'undefined' && window.gc) {
     window.gc();
   }
+}
+
+/**
+ * Get session statistics for debugging/monitoring
+ */
+export function getSessionStats(): {
+  isActive: boolean;
+  hasMasterKey: boolean;
+  username: string | null;
+  lastActivity: Date | null;
+  timeUntilExpiry: number;
+  sessionAge: number;
+} {
+  const now = Date.now();
+  const sessionAge = currentSession.lastActivity > 0 ? now - currentSession.lastActivity : 0;
+  const timeUntilExpiry = currentSession.isActive
+    ? Math.max(0, SESSION_TIMEOUT - sessionAge)
+    : 0;
+
+  return {
+    isActive: currentSession.isActive,
+    hasMasterKey: !!currentSession.masterKey,
+    username: currentSession.username,
+    lastActivity: currentSession.lastActivity > 0 ? new Date(currentSession.lastActivity) : null,
+    timeUntilExpiry,
+    sessionAge
+  };
 }
 
 /**
@@ -276,6 +353,33 @@ export function isSecureContext(): boolean {
 }
 
 /**
+ * Validate master key integrity
+ */
+export async function validateMasterKeyIntegrity(): Promise<boolean> {
+  const masterKey = getMasterKey();
+  if (!masterKey) {
+    return false;
+  }
+
+  try {
+    // Test the master key by attempting a simple encryption operation
+    const testData = new TextEncoder().encode('test');
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      masterKey,
+      testData
+    );
+
+    return true;
+  } catch (error) {
+    console.error('Master key integrity check failed:', error);
+    return false;
+  }
+}
+
+/**
  * Validate session security requirements
  */
 export function validateSessionSecurity(): {
@@ -283,21 +387,55 @@ export function validateSessionSecurity(): {
   errors: string[];
 } {
   const errors: string[] = [];
-  
+
   if (!isSecureContext()) {
     errors.push('Application must be served over HTTPS');
   }
-  
+
   if (typeof window !== 'undefined' && !window.crypto) {
     errors.push('Web Crypto API is not available');
   }
-  
+
   if (typeof window !== 'undefined' && !window.sessionStorage) {
     errors.push('SessionStorage is not available');
   }
-  
+
+  // Check if master key is present and valid when session is active
+  if (currentSession.isActive && !currentSession.masterKey) {
+    errors.push('Session is active but master key is missing');
+  }
+
   return {
     isValid: errors.length === 0,
     errors
+  };
+}
+
+/**
+ * Enhanced session validation with master key integrity check
+ */
+export async function validateSessionIntegrity(): Promise<{
+  isValid: boolean;
+  errors: string[];
+}> {
+  const securityValidation = validateSessionSecurity();
+
+  if (!securityValidation.isValid) {
+    return securityValidation;
+  }
+
+  if (currentSession.isActive) {
+    const keyIntegrityValid = await validateMasterKeyIntegrity();
+    if (!keyIntegrityValid) {
+      return {
+        isValid: false,
+        errors: ['Master key integrity check failed']
+      };
+    }
+  }
+
+  return {
+    isValid: true,
+    errors: []
   };
 }

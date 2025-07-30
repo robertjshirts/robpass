@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
 import VaultDashboard from '@/components/VaultDashboard';
+import { ErrorBoundary, useErrorHandler } from '@/components/ErrorBoundary';
 import { isSessionActive, getCurrentUsername, clearSession, setupSessionEventListeners } from '@/lib/memory-manager';
+import { SecurityLogger, LogCategory } from '@/lib/security-logger';
 
 type AuthMode = 'login' | 'register';
 
@@ -13,10 +15,11 @@ interface User {
   username: string;
 }
 
-export default function Home() {
+function HomeContent() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const handleError = useErrorHandler();
 
   // Check for existing session on component mount
   useEffect(() => {
@@ -30,8 +33,27 @@ export default function Home() {
       setIsLoading(false);
     };
 
+    // Handle session expiration events
+    const handleSessionExpired = () => {
+      setUser(null);
+      // Optionally show a notification to the user
+      console.log('Session expired. Please log in again.');
+    };
+
     checkSession();
     setupSessionEventListeners();
+
+    // Listen for session expiration events
+    if (typeof window !== 'undefined') {
+      window.addEventListener('robpass:session-expired', handleSessionExpired);
+    }
+
+    // Cleanup event listener on unmount
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('robpass:session-expired', handleSessionExpired);
+      }
+    };
   }, []);
 
   const handleAuthSuccess = (userData: User) => {
@@ -154,5 +176,24 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        SecurityLogger.error(
+          LogCategory.UI,
+          'Application error boundary triggered',
+          {
+            error: error.message,
+            componentStack: errorInfo.componentStack?.split('\n').slice(0, 3).join('\n') || 'No stack trace'
+          }
+        );
+      }}
+    >
+      <HomeContent />
+    </ErrorBoundary>
   );
 }

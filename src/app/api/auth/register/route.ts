@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getDatabase, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { SecurityLogger, LogCategory } from '@/lib/security-logger';
 
 // Rate limiting (simple in-memory store - in production use Redis)
 const registrationAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -238,7 +239,15 @@ export async function POST(request: NextRequest) {
         kdf_iterations
       })
       .returning({ id: users.id, username: users.username });
-    
+
+    // Log successful registration
+    SecurityLogger.authEvent(
+      'REGISTRATION',
+      username,
+      { userId: result[0].id },
+      request
+    );
+
     // Return success response (no sensitive data)
     return NextResponse.json({
       success: true,
@@ -250,13 +259,18 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Registration error:', error);
-    
+    SecurityLogger.error(
+      LogCategory.AUTH,
+      'Registration endpoint error',
+      {},
+      request
+    );
+
     // Return generic error to prevent information leakage
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error' 
+      {
+        success: false,
+        error: 'Internal server error'
       },
       { status: 500 }
     );

@@ -7,6 +7,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { getDatabase, users } from './db';
 import { eq } from 'drizzle-orm';
@@ -191,7 +192,27 @@ export function isSessionExpired(token: string): boolean {
 }
 
 /**
- * Generate a new session token
+ * Generate a JWT session token using jose (Edge Runtime compatible)
+ */
+export async function generateSessionTokenJose(userId: number, username: string, expiresIn: string = '24h'): Promise<string> {
+  const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+  // Convert expiresIn to seconds
+  const expirationTime = expiresIn === '24h' ? '24h' : expiresIn;
+
+  return await new SignJWT({
+    userId,
+    username,
+    type: 'session'
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(expirationTime)
+    .sign(secretKey);
+}
+
+/**
+ * Generate a new session token (legacy - for backward compatibility)
  */
 export function generateSessionToken(userId: number, username: string, expiresIn: string = '24h'): string {
   const payload = {
@@ -200,7 +221,7 @@ export function generateSessionToken(userId: number, username: string, expiresIn
     iat: Math.floor(Date.now() / 1000),
     type: 'session'
   };
-  
+
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 

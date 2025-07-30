@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase, vault_items } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
+import { SecurityLogger, LogCategory } from '@/lib/security-logger';
 
 interface CreateVaultItemRequest {
   name: string;
@@ -132,7 +133,14 @@ export async function GET(request: NextRequest) {
       .from(vault_items)
       .where(eq(vault_items.user_id, user.id))
       .orderBy(vault_items.created_at);
-    
+
+    SecurityLogger.info(
+      LogCategory.VAULT,
+      'Vault items retrieved',
+      { userId: user.id, itemCount: items.length },
+      request
+    );
+
     return NextResponse.json({
       success: true,
       data: {
@@ -216,6 +224,13 @@ export async function POST(request: NextRequest) {
         updated_at: vault_items.updated_at
       });
     
+    SecurityLogger.info(
+      LogCategory.VAULT,
+      'Vault item created',
+      { userId: user.id, itemId: result[0].id, itemName: requestData.name },
+      request
+    );
+
     return NextResponse.json({
       success: true,
       message: 'Vault item created successfully',
@@ -223,14 +238,19 @@ export async function POST(request: NextRequest) {
         item: result[0] as VaultItemResponse
       }
     });
-    
+
   } catch (error) {
-    console.error('Create vault item error:', error);
-    
+    SecurityLogger.error(
+      LogCategory.VAULT,
+      'Create vault item error',
+      {},
+      request
+    );
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error' 
+      {
+        success: false,
+        error: 'Internal server error'
       },
       { status: 500 }
     );

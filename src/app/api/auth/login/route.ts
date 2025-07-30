@@ -15,8 +15,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import { getDatabase, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { SecurityLogger, LogCategory } from '@/lib/security-logger';
 
 // Rate limiting for login attempts
 const loginAttempts = new Map<string, { count: number; lastAttempt: number; lockoutUntil?: number }>();
@@ -96,17 +98,20 @@ async function addTimingDelay(): Promise<void> {
 }
 
 /**
- * Generate secure session token
+ * Generate secure session token using jose
  */
-function generateSessionToken(userId: number, username: string): string {
-  const payload = {
+async function generateSessionToken(userId: number, username: string): Promise<string> {
+  const secretKey = new TextEncoder().encode(JWT_SECRET);
+
+  return await new SignJWT({
     userId,
     username,
-    iat: Math.floor(Date.now() / 1000),
     type: 'session'
-  };
-  
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_EXPIRES_IN)
+    .sign(secretKey);
 }
 
 /**
@@ -167,17 +172,24 @@ export async function POST(request: NextRequest) {
     // Check rate limiting
     const clientIP = getClientIP(request);
     const rateLimitCheck = checkRateLimit(clientIP);
-    
+
     if (!rateLimitCheck.allowed) {
+      SecurityLogger.warn(
+        LogCategory.SECURITY,
+        'Rate limit exceeded for login attempts',
+        { clientIP, attempts: rateLimitCheck.attempts },
+        request
+      );
+
       await addTimingDelay();
-      const lockoutMinutes = rateLimitCheck.lockoutUntil 
+      const lockoutMinutes = rateLimitCheck.lockoutUntil
         ? Math.ceil((rateLimitCheck.lockoutUntil - Date.now()) / 60000)
         : 0;
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Too many login attempts. Account locked for ${lockoutMinutes} minutes.` 
+        {
+          success: false,
+          error: `Too many login attempts. Account locked for ${lockoutMinutes} minutes.`
         },
         { status: 429 }
       );
@@ -188,11 +200,18 @@ export async function POST(request: NextRequest) {
     try {
       requestData = await request.json();
     } catch (error) {
+      SecurityLogger.warn(
+        LogCategory.API,
+        'Invalid JSON in login request',
+        { clientIP },
+        request
+      );
+
       await addTimingDelay();
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid JSON in request body' 
+        {
+          success: false,
+          error: 'Invalid JSON in request body'
         },
         { status: 400 }
       );
@@ -201,12 +220,22 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validation = validateLoginData(requestData);
     if (!validation.isValid) {
+      SecurityLogger.warn(
+        LogCategory.API,
+        'Invalid login data provided',
+        {
+          clientIP,
+          validationErrors: validation.errors
+        },
+        request
+      );
+
       await addTimingDelay();
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: 'Invalid login data',
-          details: validation.errors 
+          details: validation.errors
         },
         { status: 400 }
       );
@@ -232,10 +261,17 @@ export async function POST(request: NextRequest) {
     await addTimingDelay();
     
     if (user.length === 0) {
+      SecurityLogger.authEvent(
+        'LOGIN_FAILURE',
+        username,
+        { reason: 'user_not_found', clientIP },
+        request
+      );
+
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid credentials' 
+        {
+          success: false,
+          error: 'Invalid credentials'
         },
         { status: 401 }
       );
@@ -243,12 +279,19 @@ export async function POST(request: NextRequest) {
     
     // Verify authentication hash using bcrypt
     const isValidHash = await bcrypt.compare(authentication_hash, user[0].authentication_hash);
-    
+
     if (!isValidHash) {
+      SecurityLogger.authEvent(
+        'LOGIN_FAILURE',
+        username,
+        { reason: 'invalid_password', clientIP },
+        request
+      );
+
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid credentials' 
+        {
+          success: false,
+          error: 'Invalid credentials'
         },
         { status: 401 }
       );
@@ -256,10 +299,18 @@ export async function POST(request: NextRequest) {
     
     // Reset rate limiting on successful login
     loginAttempts.delete(clientIP);
-    
+
+    // Log successful authentication
+    SecurityLogger.authEvent(
+      'LOGIN_SUCCESS',
+      username,
+      { userId: user[0].id, clientIP },
+      request
+    );
+
     // Generate session token
-    const sessionToken = generateSessionToken(user[0].id, user[0].username);
-    
+    const sessionToken = await generateSessionToken(user[0].id, user[0].username);
+
     // Return success response with session token
     return NextResponse.json({
       success: true,
@@ -274,15 +325,20 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Login error:', error);
-    
+    SecurityLogger.error(
+      LogCategory.AUTH,
+      'Login endpoint error',
+      { clientIP: getClientIP(request) },
+      request
+    );
+
     // Add delay for error cases too
     await addTimingDelay();
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error' 
+      {
+        success: false,
+        error: 'Internal server error'
       },
       { status: 500 }
     );
