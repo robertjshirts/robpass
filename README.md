@@ -86,4 +86,21 @@ This two-step process ensures that the value sent to the server (the Authenticat
 3.  **Vault Item Editing & Deletion:**
     *   Users must edit and delete vault items.
     *   **Client Process (Edit):** Decrypt existing `encrypted_data`, modify plaintext fields (username, password, URI), re-encrypt (generating a new IV), and send to server.
-    *   **Server Process (Edit/Delete):** Update or delete the corresponding encrypted item based on `user_id` and item `id`.
+*   **Server Process (Edit/Delete):** Update or delete the corresponding encrypted item based on `user_id` and item `id`.
+
+### VI. Two-Factor Authentication (2FA)
+
+1.  **TOTP-Based 2FA Implementation:** Time-based One-Time Password (TOTP) must be implemented in compliance with RFC 6238.
+2.  **QR Code Support:** The system must generate and display QR codes for seamless setup with authenticator apps (e.g., Google Authenticator, Authy).
+3.  **Backup Recovery Codes:**
+    *   Generate a set of one-time use backup codes when TOTP is enabled.
+    *   Backup codes must be securely generated (cryptographically random), single-use, and stored encrypted following zero-knowledge principles.
+4.  **Security Requirements for Backup Codes:**
+    *   Single-use only.
+    *   Cryptographically secure randomness.
+    *   Encrypted at rest with AES-256 GCM and Base64 encoded.
+5.  **User Flow Requirements:**
+    *   **TOTP Setup:** Upon enabling 2FA, derive TOTP secret client-side from the Master Key, display QR code and backup codes for user to save.
+    *   **TOTP Verification:** User inputs TOTP code from authenticator app to confirm setup.
+    *   **Recovery:** Allow login using a valid backup code, which invalidates that code after use.
+6.  **Zero-Knowledge Integration:** All backup codes are encrypted client-side with the Master Key before transmission, ensuring the server cannot decrypt or access plaintext codes.
