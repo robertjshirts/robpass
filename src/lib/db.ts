@@ -5,8 +5,8 @@
  * It ensures proper connection management and provides a singleton instance.
  */
 
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from '@neondatabase/serverless';
 import { users, vault_items } from '../schema';
 
 // Database connection instances
@@ -18,16 +18,15 @@ let pgPool: Pool | null = null;
  */
 export function getDatabase() {
   if (!db) {
-    const postgresUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    const postgresUrl = process.env.DATABASE_URL!;
 
     if (!postgresUrl) {
-      throw new Error('DATABASE_URL or POSTGRES_URL environment variable is required');
+      throw new Error('DATABASE_URL environment variable is required');
     }
 
     // Create PostgreSQL connection pool
     pgPool = new Pool({
       connectionString: postgresUrl,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 
     db = drizzle(pgPool, {
