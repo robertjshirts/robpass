@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import TotpSetupModal from './TotpSetupModal';
+import BackupCodeManager from './BackupCodeManager';
 import { getMasterKey, getSessionToken, getCurrentUsername } from '@/lib/memory-manager';
 
 interface TotpManagerProps {
@@ -26,6 +27,8 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
     error: null
   });
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [showBackupCodeManager, setShowBackupCodeManager] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
 
   // Check TOTP status when component opens
@@ -77,10 +80,11 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
     setShowSetupModal(true);
   };
 
-  const handleDisableTotp = async () => {
-    if (!confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) {
-      return;
-    }
+  const handleDisableTotp = () => {
+    setShowDisableConfirm(true);
+  };
+
+  const handleConfirmDisable = async () => {
 
     try {
       setIsDisabling(true);
@@ -105,7 +109,8 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
 
       // Refresh status
       await checkTotpStatus();
-      
+      setShowDisableConfirm(false);
+
     } catch (error) {
       console.error('Error disabling TOTP:', error);
       setTotpStatus(prev => ({
@@ -116,6 +121,20 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
       setIsDisabling(false);
     }
   };
+
+  const handleCancelDisable = () => {
+    setShowDisableConfirm(false);
+  };
+
+  const handleManageBackupCodes = () => {
+    setShowBackupCodeManager(true);
+  };
+
+  const handleCloseBackupCodeManager = () => {
+    setShowBackupCodeManager(false);
+  };
+
+
 
   const handleSetupSuccess = () => {
     setShowSetupModal(false);
@@ -192,29 +211,44 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
                 </div>
 
                 {/* Actions */}
-                <div className="flex space-x-3">
-                  {totpStatus.enabled ? (
+                <div className="space-y-3">
+                  <div className="flex space-x-3">
+                    {totpStatus.enabled ? (
+                      <button
+                        onClick={handleDisableTotp}
+                        disabled={isDisabling || showDisableConfirm}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isDisabling ? 'Disabling...' : 'Disable 2FA'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleEnableTotp}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                      >
+                        Enable 2FA
+                      </button>
+                    )}
                     <button
-                      onClick={handleDisableTotp}
-                      disabled={isDisabling}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      onClick={onClose}
+                      className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                     >
-                      {isDisabling ? 'Disabling...' : 'Disable 2FA'}
+                      Close
                     </button>
-                  ) : (
+                  </div>
+
+                  {/* Backup Code Management */}
+                  {totpStatus.enabled && (
                     <button
-                      onClick={handleEnableTotp}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                      onClick={handleManageBackupCodes}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                     >
-                      Enable 2FA
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Manage Backup Codes</span>
                     </button>
                   )}
-                  <button
-                    onClick={onClose}
-                    className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-                  >
-                    Close
-                  </button>
                 </div>
               </div>
             )}
@@ -231,6 +265,76 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
           masterKey={masterKey}
           username={username}
           sessionToken={sessionToken}
+        />
+      )}
+
+      {/* Disable Confirmation Modal */}
+      {showDisableConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 rounded-t-lg">
+              <div className="flex items-center space-x-3">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <h2 className="text-xl font-semibold">Disable Two-Factor Authentication</h2>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Are you sure you want to disable 2FA?
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Disabling Two-Factor Authentication will make your account less secure. You will no longer need to enter a code from your authenticator app when signing in.
+                    </p>
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                      <p className="text-sm text-red-800 dark:text-red-200">
+                        <strong>Warning:</strong> This action will remove all backup codes and disable TOTP authentication for your account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={handleCancelDisable}
+                    disabled={isDisabling}
+                    className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDisable}
+                    disabled={isDisabling}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isDisabling ? 'Disabling...' : 'Yes, Disable 2FA'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Backup Code Manager */}
+      {showBackupCodeManager && username && (
+        <BackupCodeManager
+          isOpen={showBackupCodeManager}
+          onClose={handleCloseBackupCodeManager}
+          username={username}
         />
       )}
     </>

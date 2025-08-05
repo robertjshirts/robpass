@@ -120,23 +120,48 @@ async function generateHotpCode(secret: string, counter: number): Promise<string
 
 /**
  * Generates QR code data URL for TOTP setup
+ * Optimized for authenticator app scanning including 1Password
  */
 export async function generateQRCodeDataURL(secret: string, username: string): Promise<string> {
+  // Validate inputs
+  if (!secret || !username) {
+    throw new Error('Secret and username are required');
+  }
+
+  if (!validateTotpSecret(secret)) {
+    throw new Error('Invalid TOTP secret format');
+  }
+
   const issuer = 'RobPass';
-  const label = encodeURIComponent(`${issuer}:${username}`);
-  const otpAuthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=${TOTP_ALGORITHM.toUpperCase()}&digits=${TOTP_DIGITS}&period=${TOTP_WINDOW}`;
-  
+
+  // Critical fix: Use proper label format for 1Password compatibility
+  // 1Password expects the label to be just the account identifier, not issuer:account
+  const label = encodeURIComponent(username);
+
+  // Build otpauth URL with explicit parameter ordering for maximum compatibility
+  const otpAuthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=${TOTP_DIGITS}&period=${TOTP_WINDOW}`;
+
+  // Validate the generated URL
+  const validation = validateOtpAuthUrl(otpAuthUrl);
+  if (!validation.valid) {
+    throw new Error(`Invalid otpauth URL: ${validation.error}`);
+  }
+
   try {
-    return await QRCode.toDataURL(otpAuthUrl, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
+    const dataUrl = await QRCode.toDataURL(otpAuthUrl, {
+      errorCorrectionLevel: 'M', // Medium error correction - better compatibility than H
+      margin: 4, // Adequate margin for scanning
       color: {
         dark: '#000000',
         light: '#FFFFFF'
-      }
+      },
+      width: 300, // Slightly larger for better scanning
+      scale: 4 // Ensure crisp rendering
     });
+
+    return dataUrl;
   } catch (error) {
-    throw new Error('Failed to generate QR code');
+    throw new Error(`Failed to generate QR code: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -145,8 +170,60 @@ export async function generateQRCodeDataURL(secret: string, username: string): P
  */
 export function getTotpAuthUrl(secret: string, username: string): string {
   const issuer = 'RobPass';
-  const label = encodeURIComponent(`${issuer}:${username}`);
-  return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=${TOTP_ALGORITHM.toUpperCase()}&digits=${TOTP_DIGITS}&period=${TOTP_WINDOW}`;
+  const label = encodeURIComponent(username);
+  return `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=${TOTP_DIGITS}&period=${TOTP_WINDOW}`;
+}
+
+/**
+ * Validates the TOTP secret format
+ */
+export function validateTotpSecret(secret: string): boolean {
+  // Base32 alphabet: A-Z, 2-7, with optional padding
+  const base32Regex = /^[A-Z2-7]+=*$/;
+  return base32Regex.test(secret) && secret.length >= 16;
+}
+
+/**
+ * Validates the otpauth URL format
+ */
+export function validateOtpAuthUrl(url: string): { valid: boolean; error?: string } {
+  try {
+    const urlObj = new URL(url);
+
+    if (urlObj.protocol !== 'otpauth:') {
+      return { valid: false, error: 'Invalid protocol, must be otpauth:' };
+    }
+
+    if (urlObj.hostname !== 'totp') {
+      return { valid: false, error: 'Invalid type, must be totp' };
+    }
+
+    const params = urlObj.searchParams;
+    const secret = params.get('secret');
+    const issuer = params.get('issuer');
+    const algorithm = params.get('algorithm');
+
+    if (!secret) {
+      return { valid: false, error: 'Missing secret parameter' };
+    }
+
+    if (!issuer) {
+      return { valid: false, error: 'Missing issuer parameter' };
+    }
+
+    if (!validateTotpSecret(secret)) {
+      return { valid: false, error: 'Invalid secret format' };
+    }
+
+    // Validate algorithm format (accept both SHA1 and SHA-1)
+    if (algorithm && !['SHA1', 'SHA-1'].includes(algorithm.toUpperCase())) {
+      return { valid: false, error: 'Invalid algorithm, must be SHA1 or SHA-1' };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    return { valid: false, error: 'Invalid URL format' };
+  }
 }
 
 /**

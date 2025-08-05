@@ -123,7 +123,7 @@ function HomeContent() {
         </div>
 
         {/* Main Content */}
-        <VaultDashboard user={user} />
+        <VaultDashboard user={user} onTotpSettings={handleTotpSettings} />
 
         {/* Footer */}
         <div className="mt-8 py-6 border-t border-gray-200 dark:border-gray-700">

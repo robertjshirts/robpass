@@ -57,11 +57,13 @@ export async function POST(request: NextRequest) {
     // This endpoint just stores the encrypted secret and backup codes
 
     // Hash backup codes before storing
-    const hashedBackupCodes = backupCodes.map((code: string) => ({
-      user_id: userId,
-      code_hash: hashBackupCode(code),
-      used: false
-    }));
+    const hashedBackupCodes = await Promise.all(
+      backupCodes.map(async (code: string) => ({
+        user_id: userId,
+        code_hash: await hashBackupCode(code),
+        used: false
+      }))
+    );
 
     // Start transaction
     await db.transaction(async (tx: any) => {

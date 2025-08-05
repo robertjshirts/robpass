@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     // Verify the backup code against stored hashes
     let validCodeId: number | null = null;
     for (const storedCode of userBackupCodes) {
-      if (verifyBackupCode(backupCode, storedCode.code_hash)) {
+      if (await verifyBackupCode(backupCode, storedCode.code_hash)) {
         validCodeId = storedCode.id;
         break;
       }

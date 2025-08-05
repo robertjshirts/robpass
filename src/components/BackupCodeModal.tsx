@@ -65,7 +65,9 @@ export default function BackupCodeModal({
   };
 
   const handleBackToTotpClick = () => {
-    handleClose();
+    // Clear local state but don't call onClose() to preserve authentication state
+    setBackupCode('');
+    setError('');
     onBackToTotp();
   };
 
@@ -79,60 +81,119 @@ export default function BackupCodeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Backup Code Recovery</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        <div>
-          <p className="text-gray-600 mb-4">
-            Enter one of your backup codes. Each code can only be used once.
-          </p>
-          
-          <input
-            type="text"
-            value={backupCode}
-            onChange={(e) => setBackupCode(formatBackupCode(e.target.value))}
-            placeholder="XXXX-XXXX-XXXX-XXXX"
-            className="w-full p-3 border border-gray-300 rounded mb-4 text-center text-lg font-mono"
-            autoFocus
-          />
-
-          <button
-            onClick={handleVerifyCode}
-            disabled={isLoading || backupCode.length < 8}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 mb-4"
-          >
-            {isLoading ? 'Verifying...' : 'Verify Backup Code'}
-          </button>
-
-          <div className="text-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 rounded-t-lg">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              <h2 className="text-xl font-semibold">Backup Code Recovery</h2>
+            </div>
             <button
-              onClick={handleBackToTotpClick}
-              className="text-blue-600 hover:text-blue-800 text-sm"
+              onClick={handleClose}
+              className="text-amber-100 hover:text-white transition-colors p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              aria-label="Close modal"
             >
-              Back to authenticator code
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
+        </div>
 
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> After using a backup code, consider generating new backup codes 
-              from your account settings to maintain security.
+        {/* Content */}
+        <div className="p-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-start space-x-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-medium">Recovery Error</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+              Enter one of your backup codes. Each code can only be used once.
             </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="backup-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Backup Recovery Code
+              </label>
+              <input
+                id="backup-code"
+                type="text"
+                value={backupCode}
+                onChange={(e) => setBackupCode(formatBackupCode(e.target.value))}
+                placeholder="XXXX-XXXX-XXXX-XXXX"
+                className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-xl font-mono tracking-wider bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                autoFocus
+                autoComplete="one-time-code"
+              />
+            </div>
+
+            <button
+              onClick={handleVerifyCode}
+              disabled={isLoading || backupCode.length < 8}
+              className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 px-4 rounded-lg hover:from-amber-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium flex items-center justify-center space-x-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Verify Backup Code</span>
+                </>
+              )}
+            </button>
+
+            <div className="text-center pt-2">
+              <button
+                onClick={handleBackToTotpClick}
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-2 mx-auto"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                </svg>
+                <span>Back to authenticator code</span>
+              </button>
+            </div>
+
+            <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900 dark:bg-opacity-20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Important Security Note</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    After using a backup code, consider generating new backup codes from your account settings to maintain security.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -216,9 +216,9 @@ export default function TotpSetupModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[95vh] flex flex-col min-h-0">
+        {/* Header - Fixed */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex-shrink-0">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Enable Two-Factor Authentication</h2>
             <button
@@ -268,8 +268,9 @@ export default function TotpSetupModal({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+          <div className="p-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6 flex items-start">
               <svg className="w-5 h-5 text-red-400 dark:text-red-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -284,16 +285,16 @@ export default function TotpSetupModal({
 
           <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
             {currentStep === 'qr-scan' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="text-center">
-                  <div className="mb-4">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
+                  <div className="mb-3">
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-3">
                       <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M12 12h-4.01M12 12v4m6-4h.01M12 8h.01M12 8h4.01M12 8H7.99M12 8V4m0 0H7.99M12 4h4.01" />
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Scan QR Code</h4>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Use your authenticator app to scan this QR code
                     </p>
                   </div>
@@ -303,25 +304,26 @@ export default function TotpSetupModal({
                       <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
                     </div>
                   ) : qrCodeUrl ? (
-                    <div className="space-y-6">
-                      <div className="bg-white dark:bg-gray-700 p-6 rounded-lg border-2 border-gray-200 dark:border-gray-600 inline-block">
+                    <div className="space-y-4">
+                      <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-600 inline-block">
                         <img
                           src={qrCodeUrl}
-                          alt="TOTP QR Code"
-                          className="w-48 h-48 mx-auto"
+                          alt="TOTP QR Code for Authenticator Apps"
+                          className="w-64 h-64 mx-auto block"
+                          style={{ imageRendering: 'crisp-edges' }}
                         />
                       </div>
 
-                      <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 font-medium">
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 font-medium">
                           Can't scan the QR code? Enter this key manually:
                         </p>
-                        <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
-                          <code className="text-sm font-mono text-gray-800 dark:text-gray-200 break-all select-all">
+                        <div className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600">
+                          <code className="text-xs font-mono text-gray-800 dark:text-gray-200 break-all select-all">
                             {totpSecret}
                           </code>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Click the code above to select all
                         </p>
                       </div>
@@ -342,15 +344,15 @@ export default function TotpSetupModal({
             )}
 
             {currentStep === 'verification' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full mb-3">
                     <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Verify Your Setup</h4>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     Enter the 6-digit code from your authenticator app
                   </p>
                 </div>
@@ -423,39 +425,39 @@ export default function TotpSetupModal({
             )}
 
             {currentStep === 'backup-codes' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mb-3">
                     <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Save Your Backup Codes</h4>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     Store these codes safely - they're your only way to recover access if you lose your authenticator
                   </p>
                 </div>
 
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     <div>
-                      <h5 className="font-medium text-amber-800 dark:text-amber-300">Important Security Notice</h5>
-                      <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                      <h5 className="text-sm font-medium text-amber-800 dark:text-amber-300">Important Security Notice</h5>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
                         Each backup code can only be used once. Store them in a secure location separate from your authenticator app.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-2">
                     {backupCodes.map((code, index) => (
                       <div
                         key={index}
-                        className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600 font-mono text-sm text-center text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-all cursor-pointer"
+                        className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600 font-mono text-xs text-center text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors select-all cursor-pointer"
                         title="Click to select"
                       >
                         {code}
@@ -464,31 +466,31 @@ export default function TotpSetupModal({
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={copyAllBackupCodes}
-                    className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium flex items-center justify-center"
+                    className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium flex items-center justify-center"
                   >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    Copy All Codes
+                    Copy All
                   </button>
 
                   <button
                     onClick={downloadBackupCodes}
-                    className="w-full px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors font-medium flex items-center justify-center"
+                    className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm font-medium flex items-center justify-center"
                   >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Download as Text File
+                    Download
                   </button>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <h5 className="font-medium text-blue-900 dark:text-blue-300 mb-2">Storage Recommendations:</h5>
-                  <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <h5 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">Storage Recommendations:</h5>
+                  <ul className="text-xs text-blue-800 dark:text-blue-400 space-y-1">
                     <li>• Print and store in a secure physical location</li>
                     <li>• Save in a password manager (different from this one)</li>
                     <li>• Store in a secure cloud storage service</li>
@@ -516,6 +518,7 @@ export default function TotpSetupModal({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

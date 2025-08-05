@@ -12,6 +12,8 @@
 import { useState } from 'react';
 import { deriveKeys } from '@/lib/crypto';
 import { initializeSession } from '@/lib/memory-manager';
+import TotpLoginModal from './TotpLoginModal';
+import BackupCodeModal from './BackupCodeModal';
 
 interface LoginFormProps {
   onSuccess?: (user: { id: number; username: string }) => void;
@@ -38,6 +40,12 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // TOTP modal states
+  const [showTotpModal, setShowTotpModal] = useState(false);
+  const [showBackupCodeModal, setShowBackupCodeModal] = useState(false);
+  const [totpUserData, setTotpUserData] = useState<{ id: number; username: string } | null>(null);
+  const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
 
   /**
    * Validate form data
@@ -113,6 +121,16 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
       const loginResult = await loginResponse.json();
 
+      // Check if TOTP is required
+      if (loginResult.requires_totp) {
+        // Store master key and user data for TOTP verification
+        setMasterKey(masterKey);
+        setTotpUserData(loginResult.user);
+        setShowTotpModal(true);
+        setIsLoading(false);
+        return;
+      }
+
       if (!loginResponse.ok || !loginResult.success) {
         throw new Error(loginResult.error || 'Login failed');
       }
@@ -147,7 +165,64 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
     }
   };
 
+  /**
+   * Handle successful TOTP verification
+   */
+  const handleTotpSuccess = (sessionToken: string, user: { id: number; username: string }) => {
+    if (!masterKey) {
+      setErrors({ general: 'Session expired. Please try logging in again.' });
+      return;
+    }
 
+    // Initialize session with master key in memory
+    initializeSession(
+      masterKey,
+      user.username,
+      sessionToken
+    );
+
+    // Clear form data and states
+    setFormData({
+      username: '',
+      password: ''
+    });
+    setMasterKey(null);
+    setTotpUserData(null);
+    setShowTotpModal(false);
+    setShowBackupCodeModal(false);
+
+    // Call success callback
+    if (onSuccess) {
+      onSuccess(user);
+    }
+  };
+
+  /**
+   * Handle switching from TOTP to backup code modal
+   */
+  const handleSwitchToBackupCode = () => {
+    setShowTotpModal(false);
+    setShowBackupCodeModal(true);
+  };
+
+  /**
+   * Handle switching from backup code to TOTP modal
+   */
+  const handleSwitchToTotp = () => {
+    setShowBackupCodeModal(false);
+    setShowTotpModal(true);
+  };
+
+  /**
+   * Handle closing TOTP modals
+   */
+  const handleCloseTotpModals = () => {
+    setShowTotpModal(false);
+    setShowBackupCodeModal(false);
+    setMasterKey(null);
+    setTotpUserData(null);
+    setIsLoading(false);
+  };
 
   /**
    * Handle input changes
@@ -286,7 +361,28 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
         </p>
       </div>
 
+      {/* TOTP Login Modal */}
+      {totpUserData && masterKey && (
+        <TotpLoginModal
+          isOpen={showTotpModal}
+          onClose={handleCloseTotpModals}
+          onSuccess={handleTotpSuccess}
+          onUseBackupCode={handleSwitchToBackupCode}
+          username={totpUserData.username}
+          masterKey={masterKey}
+        />
+      )}
 
+      {/* Backup Code Modal */}
+      {totpUserData && (
+        <BackupCodeModal
+          isOpen={showBackupCodeModal}
+          onClose={handleCloseTotpModals}
+          onSuccess={handleTotpSuccess}
+          onBackToTotp={handleSwitchToTotp}
+          username={totpUserData.username}
+        />
+      )}
     </div>
   );
 }
