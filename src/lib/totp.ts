@@ -243,7 +243,7 @@ export function generateBackupCodes(count: number = 10): string[] {
       code += chars[bytes[j] % chars.length];
     }
     
-    // Format as XXXX-XXXX-XXXX-XXXX
+    // Format as XXXX-XXXX-XX
     const formatted = code.match(/.{1,4}/g)?.join('-') || code;
     codes.push(formatted);
   }

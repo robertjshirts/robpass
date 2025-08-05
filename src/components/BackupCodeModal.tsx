@@ -139,7 +139,7 @@ export default function BackupCodeModal({
                 type="text"
                 value={backupCode}
                 onChange={(e) => setBackupCode(formatBackupCode(e.target.value))}
-                placeholder="XXXX-XXXX-XXXX-XXXX"
+                placeholder="XXXX-XXXX-XX"
                 className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-xl font-mono tracking-wider bg-gray-50 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
                 autoFocus
                 autoComplete="one-time-code"
