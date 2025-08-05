@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      enabled: user[0].totp_enabled || false
+      data: {
+        totp_enabled: user[0].totp_enabled || false
+      }
     });
 
   } catch (error) {

@@ -5,6 +5,7 @@ import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
 import VaultDashboard from '@/components/VaultDashboard';
 import UserMenu from '@/components/UserMenu';
+import TotpManager from '@/components/TotpManager';
 import { ErrorBoundary, useErrorHandler } from '@/components/ErrorBoundary';
 import { isSessionActive, getCurrentUsername, clearSession, setupSessionEventListeners } from '@/lib/memory-manager';
 import { SecurityLogger, LogCategory } from '@/lib/security-logger';
@@ -20,6 +21,7 @@ function HomeContent() {
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTotpManager, setShowTotpManager] = useState(false);
   const handleError = useErrorHandler();
 
   // Check for existing session on component mount
@@ -84,6 +86,14 @@ function HomeContent() {
     }
   };
 
+  const handleTotpSettings = () => {
+    setShowTotpManager(true);
+  };
+
+  const handleCloseTotpManager = () => {
+    setShowTotpManager(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -107,7 +117,7 @@ function HomeContent() {
                   🔐 RobPass
                 </h1>
               </div>
-              <UserMenu user={user} onLogout={handleLogout} />
+              <UserMenu user={user} onLogout={handleLogout} onTotpSettings={handleTotpSettings} />
             </div>
           </div>
         </div>
@@ -131,6 +141,13 @@ function HomeContent() {
             </p>
           </div>
         </div>
+
+        {/* TOTP Manager Modal */}
+        <TotpManager
+          isOpen={showTotpManager}
+          onClose={handleCloseTotpManager}
+          user={user}
+        />
       </div>
     );
   }
