@@ -5,7 +5,7 @@ This document details the technologies used in the RobPass project, the developm
 ## Technologies Used
 -   **Frontend Framework**: Next.js (React)
 -   **Backend Runtime**: Node.js
--   **Database**: SQLite (development, as per README.md)
+-   **Database**: NeonDB Postgres (development)
 -   **ORM**: Drizzle ORM
 -   **Authentication**: JSON Web Tokens (JWT) with `jose` library
 -   **Password Hashing**: `bcrypt` (for server-side auth hash storage), PBKDF2 (for client-side key derivation)
@@ -18,7 +18,7 @@ This document details the technologies used in the RobPass project, the developm
 ## Development Setup
 -   **Node.js**: Version 18+ recommended.
 -   **Package Manager**: npm (confirmed by `package.json`, `package-lock.json`).
--   **Database Setup**: Local SQLite database file (`local.db-shm`, `local.db-wal`). Drizzle migrations (`drizzle/` directory) to manage schema.
+-   **Database Setup**: NeonDB Postgres. Drizzle migrations (`drizzle/` directory) to manage schema.
 -   **Environment Variables**: `.env` file for sensitive configurations (e.g., JWT secret, database path).
 
 ## Technical Constraints

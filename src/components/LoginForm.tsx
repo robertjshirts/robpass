@@ -2,7 +2,7 @@
 
 /**
  * User Login Form Component for RobPass
- * 
+ *
  * This component handles user login with client-side cryptography.
  * It fetches user salt and iterations, derives the master key and
  * authentication hash, and submits only the authentication hash
@@ -34,7 +34,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
     username: '',
     password: ''
   });
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -147,6 +147,8 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
     }
   };
 
+
+
   /**
    * Handle input changes
    */
@@ -157,7 +159,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
       ...prev,
       [field]: e.target.value
     }));
-    
+
     // Clear field-specific error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -283,6 +285,8 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           🔒 Your password is processed client-side and never sent to our servers.
         </p>
       </div>
+
+
     </div>
   );
 }

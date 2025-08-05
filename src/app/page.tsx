@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import RegistrationForm from '@/components/RegistrationForm';
 import LoginForm from '@/components/LoginForm';
 import VaultDashboard from '@/components/VaultDashboard';
+import UserMenu from '@/components/UserMenu';
 import { ErrorBoundary, useErrorHandler } from '@/components/ErrorBoundary';
 import { isSessionActive, getCurrentUsername, clearSession, setupSessionEventListeners } from '@/lib/memory-manager';
 import { SecurityLogger, LogCategory } from '@/lib/security-logger';
@@ -105,16 +106,8 @@ function HomeContent() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   🔐 RobPass
                 </h1>
-                <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
-                  Welcome back, {user.username}
-                </span>
               </div>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-              >
-                Logout
-              </button>
+              <UserMenu user={user} onLogout={handleLogout} />
             </div>
           </div>
         </div>

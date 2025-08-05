@@ -96,6 +96,7 @@ export async function deriveKeys(
     );
 
     // Derive the master key for encryption/decryption
+    // Note: extractable is set to true to allow TOTP secret derivation
     const masterKey = await crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
@@ -108,7 +109,7 @@ export async function deriveKeys(
         name: 'AES-GCM',
         length: CRYPTO_CONFIG.AES_KEY_LENGTH
       },
-      false,
+      true, // extractable: true for TOTP secret derivation
       ['encrypt', 'decrypt']
     );
 

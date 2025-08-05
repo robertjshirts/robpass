@@ -252,7 +252,8 @@ export async function POST(request: NextRequest) {
       .select({
         id: users.id,
         username: users.username,
-        authentication_hash: users.authentication_hash
+        authentication_hash: users.authentication_hash,
+        totp_enabled: users.totp_enabled
       })
       .from(users)
       .where(eq(users.username, username))
@@ -298,6 +299,27 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Check if TOTP is enabled for this user
+    if (user[0].totp_enabled) {
+      // TOTP is enabled - require TOTP verification
+      SecurityLogger.authEvent(
+        'LOGIN_ATTEMPT',
+        username,
+        { userId: user[0].id, clientIP, reason: 'totp_required' },
+        request
+      );
+
+      return NextResponse.json({
+        success: false,
+        requires_totp: true,
+        message: 'TOTP verification required',
+        user: {
+          id: user[0].id,
+          username: user[0].username
+        }
+      });
+    }
+
     // Reset rate limiting on successful login
     loginAttempts.delete(clientIP);
 

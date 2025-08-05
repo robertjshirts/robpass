@@ -12,6 +12,7 @@ import VaultItem, { VaultItemData } from './VaultItem';
 import AddVaultItem from './AddVaultItem';
 import { ErrorDisplay, useErrorHandler } from './ErrorBoundary';
 import { SecurityLogger, LogCategory } from '@/lib/security-logger';
+import { getSessionToken } from '@/lib/memory-manager';
 
 interface VaultDashboardProps {
   user: {
@@ -60,6 +61,8 @@ export default function VaultDashboard({ user }: VaultDashboardProps) {
       setIsLoading(false);
     }
   };
+
+
 
   /**
    * Handle adding a new vault item
@@ -240,6 +243,7 @@ export default function VaultDashboard({ user }: VaultDashboardProps) {
                   <li>Your master key never leaves your device</li>
                   <li>Zero-knowledge architecture ensures maximum security</li>
                   <li>Session automatically expires after 30 minutes of inactivity</li>
+
                 </ul>
               </div>
             </div>

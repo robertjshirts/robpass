@@ -24,14 +24,14 @@ To create a secure and user-friendly password manager application.
 4.  **Strong Encryption:** AES-256 GCM with unique IVs per encryption.
 5.  **Secure Storage:** Encrypted vault data at rest on server.
 6.  **Secure Communication:** All client-server communication via HTTPS.
-7.  **Key & Secret Management:** Master passwords and derived keys in volatile client-side memory; cleared on logout. Session tokens in `sessionStorage`.
+7.  **Key & Secret Management:** Master passwords and derived keys in volatile client-client memory; cleared on logout. Session tokens in `sessionStorage`.
 8.  **Data Encoding:** Encrypted data (ciphertext and IVs) Base64 encoded.
 
 ## Technologies (Initial Assumption)
 - Next.js (React) for the frontend
 - Node.js for the backend API
 - Drizzle ORM for database interaction
-- SQLite for the database (local development)
+- NeonDB Postgres for the database (local development)
 - Playwright for end-to-end testing
 - bcrypt for password hashing
 - jose for JWT handling
