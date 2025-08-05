@@ -111,6 +111,9 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
       await checkTotpStatus();
       setShowDisableConfirm(false);
 
+      // Dispatch custom event to notify other components of TOTP status change
+      window.dispatchEvent(new CustomEvent('totp-status-changed'));
+
     } catch (error) {
       console.error('Error disabling TOTP:', error);
       setTotpStatus(prev => ({
@@ -139,6 +142,9 @@ export default function TotpManager({ isOpen, onClose, user }: TotpManagerProps)
   const handleSetupSuccess = () => {
     setShowSetupModal(false);
     checkTotpStatus(); // Refresh status
+
+    // Dispatch custom event to notify other components of TOTP status change
+    window.dispatchEvent(new CustomEvent('totp-status-changed'));
   };
 
   const handleSetupClose = () => {

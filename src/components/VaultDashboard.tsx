@@ -2,17 +2,16 @@
 
 /**
  * Vault Dashboard Component for RobPass
- * 
+ *
  * This component manages the main vault interface, displaying all vault items
  * and providing functionality to add, edit, and delete items.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import VaultItem, { VaultItemData } from './VaultItem';
 import AddVaultItem from './AddVaultItem';
 import { ErrorDisplay, useErrorHandler } from './ErrorBoundary';
-import { SecurityLogger, LogCategory } from '@/lib/security-logger';
-import { getSessionToken } from '@/lib/memory-manager';
+import TOTPManagement, { TOTPManagementRef } from './TOTPManagement';
 
 interface VaultDashboardProps {
   user: {
@@ -28,8 +27,7 @@ export default function VaultDashboard({ user, onTotpSettings }: VaultDashboardP
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
-  const [totpLoading, setTotpLoading] = useState(true);
+  const totpManagementRef = useRef<TOTPManagementRef>(null);
   const handleError = useErrorHandler();
 
   /**
@@ -66,44 +64,6 @@ export default function VaultDashboard({ user, onTotpSettings }: VaultDashboardP
   };
 
   /**
-   * Check TOTP status from API
-   */
-  const checkTotpStatus = async () => {
-    try {
-      setTotpLoading(true);
-
-      const sessionToken = getSessionToken();
-      if (!sessionToken) {
-        setTotpEnabled(null);
-        return;
-      }
-
-      const response = await fetch('/api/auth/totp/status', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`
-        }
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setTotpEnabled(result.data.totp_enabled || false);
-      } else {
-        setTotpEnabled(null);
-      }
-
-    } catch (error) {
-      console.error('Error checking TOTP status:', error);
-      setTotpEnabled(null);
-    } finally {
-      setTotpLoading(false);
-    }
-  };
-
-
-
-  /**
    * Handle adding a new vault item
    */
   const handleAddItem = (newItem: VaultItemData) => {
@@ -134,10 +94,9 @@ export default function VaultDashboard({ user, onTotpSettings }: VaultDashboardP
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Load vault items and TOTP status on component mount
+  // Load vault items on component mount
   useEffect(() => {
     loadVaultItems();
-    checkTotpStatus();
   }, []);
 
   return (
@@ -162,59 +121,10 @@ export default function VaultDashboard({ user, onTotpSettings }: VaultDashboardP
         </div>
 
         {/* TOTP Management Section */}
-        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Two-Factor Authentication</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              {/* TOTP Status Indicator */}
-              <div className="flex items-center space-x-2">
-                {totpLoading ? (
-                  <div className="w-3 h-3 bg-blue-300 rounded-full animate-pulse"></div>
-                ) : (
-                  <div className={`w-3 h-3 rounded-full ${
-                    totpEnabled === true ? 'bg-green-500' :
-                    totpEnabled === false ? 'bg-yellow-500' : 'bg-gray-400'
-                  }`}></div>
-                )}
-                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  {totpLoading ? 'Checking...' :
-                   totpEnabled === true ? 'Enabled' :
-                   totpEnabled === false ? 'Disabled' : 'Unknown'}
-                </span>
-              </div>
-              {/* Action Button */}
-              <button
-                onClick={() => {
-                  if (onTotpSettings) {
-                    onTotpSettings();
-                  } else {
-                    alert('To manage Two-Factor Authentication, click on your username in the top right and select "Two-Factor Authentication".');
-                  }
-                }}
-                className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-              >
-                {totpEnabled === true ? 'Manage 2FA' : 'Enable 2FA'}
-              </button>
-            </div>
-          </div>
-          <div className="mt-2">
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              {totpEnabled === true
-                ? 'Your account is protected with Two-Factor Authentication. Great job keeping your passwords secure!'
-                : totpEnabled === false
-                ? 'Add an extra layer of security to your account by enabling Two-Factor Authentication.'
-                : 'Unable to determine 2FA status. Please check your connection and try again.'
-              }
-            </p>
-          </div>
-        </div>
+        <TOTPManagement
+          ref={totpManagementRef}
+          onTotpSettings={onTotpSettings}
+        />
 
         {/* Search Bar */}
         <div className="relative">

@@ -161,6 +161,10 @@ export default function TotpSetupModal({
   const handleComplete = () => {
     onSuccess();
     onClose();
+
+    // Dispatch custom event to notify other components of TOTP status change
+    window.dispatchEvent(new CustomEvent('totp-status-changed'));
+
     // Reset state
     setCurrentStep('qr-scan');
     setQrCodeUrl('');
